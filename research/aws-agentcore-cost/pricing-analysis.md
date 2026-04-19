@@ -3,6 +3,18 @@
 ## Overview
 This document analyzes the cost structure of AWS Bedrock AgentCore for enterprise agent deployment based on publicly available information as of April 2026.
 
+## Specific Use Case: Tier 1 US-Based Retail Bank
+Based on AWS Calculator estimation (https://calculator.aws/#/estimate?id=19c2da06e479d0010c03861ae06628c18f94d044), we have modeled a Tier 1 US-based Retail Bank in a full production environment, specifically a high-stakes department like Fraud Prevention or Credit Services.
+
+**Justification for Selected Values:**
+- **100,000 monthly sessions**: Rooted in enterprise-grade scale where reliability and auditability are non-negotiable for banking operations
+- **Claude 3.5 Sonnet selection**: Banking agents require advanced reasoning capabilities for complex financial decisions
+- **High token counts (6,000 input/800 output)**: Necessary to handle massive system prompts for complex regulatory guardrails and detailed tool schemas (API definitions) for core banking systems
+- **95% I/O wait time**: Reflects the reality of legacy banking middleware latency in enterprise environments
+- **90% prompt caching hit rate**: Accounts for the repetitive nature of massive, static compliance headers in banking workflows
+
+This configuration ensures the agent is sophisticated enough to avoid "hallucinating" financial data while remaining cost-optimized for a multi-million-user customer base.
+
 ## Pricing Model Summary
 
 ### Core Pricing Principles
