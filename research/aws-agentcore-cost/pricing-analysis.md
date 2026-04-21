@@ -1,19 +1,21 @@
-# AWS AgentCore Pricing Analysis for Enterprise Deployment
+# Cost of Running an Agent: Enterprise Analysis for AWS Bedrock AgentCore
 
 ## Overview
-This document analyzes the cost structure of AWS Bedrock AgentCore for enterprise agent deployment based on publicly available information as of April 2026.
+This document provides a comprehensive analysis of the total cost of running AI agents using AWS Bedrock AgentCore for enterprise deployment. It includes all cost components required for running agents in production, explained in executive-friendly terms for stakeholder communication.
 
-## Specific Use Case: Tier 1 US-Based Retail Bank
-Based on AWS Calculator estimation (https://calculator.aws/#/estimate?id=19c2da06e479d0010c03861ae06628c18f94d044), we have modeled a Tier 1 US-based Retail Bank in a full production environment, specifically a high-stakes department like Fraud Prevention or Credit Services.
+## Specific Use Case: Tier 1 US-Based Retail Bank - Fraud Prevention/Credit Services
+Based on AWS Calculator estimation (https://calculator.aws/#/estimate?id=19c2da06e479d0010c03861ae06628c18f94d044), we have modeled a Tier 1 US-based Retail Bank in a full production environment, specifically high-stakes departments like Fraud Prevention or Credit Services.
 
 **Justification for Selected Values:**
-- **100,000 monthly sessions**: Rooted in enterprise-grade scale where reliability and auditability are non-negotiable for banking operations
-- **Claude 3.5 Sonnet selection**: Banking agents require advanced reasoning capabilities for complex financial decisions
-- **High token counts (6,000 input/800 output)**: Necessary to handle massive system prompts for complex regulatory guardrails and detailed tool schemas (API definitions) for core banking systems
-- **95% I/O wait time**: Reflects the reality of legacy banking middleware latency in enterprise environments
-- **90% prompt caching hit rate**: Accounts for the repetitive nature of massive, static compliance headers in banking workflows
+- **25 Agents for 10 Use Cases**: The bank requires 25 specialized agents across 10 business use cases (example: 5 QC processes × 5 agents per process = 25 agents)
+- **1,000 Invocations per Agent**: Each agent is invoked 1,000 times monthly to process workloads (e.g., 1,000 QC items per agent)
+- **Total Monthly Sessions**: 25 agents × 1,000 invocations = 25,000 sessions (conservative estimate; actual may vary)
+- **Claude 3.5 Sonnet Selection**: Banking agents require advanced reasoning capabilities (score: 90+ on MMLU) for complex financial decisions and regulatory compliance
+- **High Token Counts (6,000 input/800 output)**: Necessary to handle massive system prompts for complex regulatory guardrails (Basel III, CCAR, GDPR) and detailed tool schemas (API definitions) for core banking systems
+- **95% I/O Wait Time**: Reflects the reality of legacy banking middleware latency in enterprise environments where agents wait for core banking system responses
+- **90% Prompt Caching Hit Rate**: Accounts for the repetitive nature of massive, static compliance headers and regulatory checks that remain constant across invocations
 
-This configuration ensures the agent is sophisticated enough to avoid "hallucinating" financial data while remaining cost-optimized for a multi-million-user customer base.
+This configuration ensures the agents are sophisticated enough to avoid "hallucinating" financial data while remaining cost-optimized for a multi-million-user customer base.
 
 ## Pricing Model Summary
 
@@ -26,9 +28,9 @@ This configuration ensures the agent is sophisticated enough to avoid "hallucina
 ### Detailed Cost Components
 
 #### 1. AgentCore Runtime Costs
-- **vCPU**: Charged per-second usage
-- **Memory (GB)**: Charged per GB-hour
-- **Gateway Operation Fees**: Additional charges for gateway operations
+- **vCPU**: Charged per-second usage - represents the computing power allocated to your agent
+- **Memory (GB)**: Charged per GB-hour - represents the RAM allocated to your agent
+- **Gateway Operation Fees**: Additional charges for each agent invocation/request processed
 
 #### 2. AgentCore Browser (if used)
 - Cloud-based browser runtime for website interaction
@@ -37,21 +39,84 @@ This configuration ensures the agent is sophisticated enough to avoid "hallucina
 
 #### 3. AgentCore Memory Storage
 - **Managed session storage**: Currently in public preview (S3-backed)
+- Stores agent conversation history, state, and temporary data
 - Pricing subject to change before General Availability (GA)
 - Note: Check latest documentation for updated pricing
 
-#### 4. Additional Potential Costs
-- **Model Usage**: For built-in with override and self-managed strategies, additional model usage charges may apply in your account
+#### 4. Model Usage Costs (CRITICAL COMPONENT)
+- **Input Tokts**: Charged per 1,000 tokens - cost for processing user queries and system prompts
+- **Output Tokens**: Charged per 1,000 tokens - cost for generating agent responses
+- **Cache Reads**: Charged per 1,000 tokens - cost for reusing cached prompt sections
+- **Cache Writes**: Charged per 1,000 tokens - cost for storing prompt sections in cache
+- **For Claude 3.5 Sonnet**: $0.003 per 1,000 input tokens, $0.015 per 1,000 output tokens
+
+#### 5. Additional Potential Costs
 - **Knowledge Retrieval**: Amazon Bedrock RAG retrieval costs apply if using knowledge base integration
 - **Tool-Related Charges**: Separate charges for tools used by agents (AWS Lambda, third-party APIs, etc.)
 - **Data Transfer**: Standard EC2 network data transfer rates apply
 - **Guardrails**: Content filters metered daily, billed monthly (from Feb 1, 2025)
+- **Agent Runtime**: Base compute costs for agent orchestration and management
 
-## Cost Calculation Example
-From available sources, a conservative example for a proof of concept:
-- AgentCore Runtime costs only factored in
-- Enables month-over-month cost tracking understanding
-- Note: Actual costs may vary as agent usage stabilizes over time
+## Detailed Cost Calculation for Tier 1 US-Based Retail Bank
+
+Based on the AWS Calculator estimation and the specified parameters, here is the detailed monthly cost breakdown:
+
+### Usage Parameters
+- **Number of Agents**: 25 (5 QC processes × 5 agents per process)
+- **Invocations per Agent**: 1,000 times monthly
+- **Total Monthly Sessions**: 25,000 (25 agents × 1,000 invocations)
+- **Model**: Claude 3.5 Sonnet
+- **Input Tokens per Session**: 6,000
+- **Output Tokens per Session**: 800
+- **Prompt Cache Hit Rate**: 90%
+- **I/O Wait Time**: 95%
+
+### Monthly Cost Breakdown
+
+#### 1. Model Usage Costs (Claude 3.5 Sonnet)
+- **Input Tokens**: 25,000 sessions × 6,000 tokens = 150,000,000 tokens
+  - At 90% cache hit rate: 15,000,000 tokens billed (10% uncached)
+  - Cost: (15,000,000 ÷ 1,000) × $0.003 = $45.00
+- **Output Tokens**: 25,000 sessions × 800 tokens = 20,000,000 tokens
+  - Cost: (20,000,000 ÷ 1,000) × $0.015 = $300.00
+- **Cache Writes**: 150,000,000 tokens × 90% = 135,000,000 tokens
+  - Cost: (135,000,000 ÷ 1,000) × $0.003 = $405.00
+
+#### 2. AgentCore Runtime Costs
+- **vCPU**: Based on AWS Calculator estimation for specified configuration
+- **Memory (GB)**: Based on AWS Calculator estimation for specified configuration
+- **Gateway Operation Fees**: 25,000 invocations × fee per invocation
+
+#### 3. Additional Cost Components
+- **AgentCore Memory Storage**: Session storage for 25,000 monthly interactions
+- **Data Transfer**: Standard EC2 rates for agent-core banking system communication
+- **Guardrails**: Content filtering for financial compliance checks
+
+### Total Estimated Monthly Cost
+Based on the AWS Calculator reference (https://calculator.aws/#/estimate?id=19c2da06e479d0010c03861ae06628c18f94d044), the total estimated monthly cost for running 25 agents with the specified usage pattern can be calculated by summing the components above.
+
+### Component Cost Summary
+
+#### Model Usage Costs (from calculations above):
+- Input Tokens: $45.00
+- Output Tokens: $300.00
+- Cache Writes: $405.00
+- **Subtotal Model Usage**: $750.00
+
+#### AgentCore Runtime Costs:
+- vCPU, Memory, and Gateway Operation Fees: [VALUE FROM CALCULATOR - MODEL USAGE]
+
+#### Additional Costs:
+- AgentCore Memory Storage: [ESTIMATED BASED ON USAGE]
+- Data Transfer: [BASED ON NETWORK USAGE]
+- Guardrails: [BASED ON CONTENT FILTERING USAGE]
+
+### Cost Per Transaction Calculations
+- **Cost per Agent Invocation**: Total monthly cost ÷ 25,000 sessions
+- **Cost per QC Process**: Cost per agent × 5 agents
+- **Cost per 1,000 QC Items**: Cost per QC process × 5 processes
+
+This breakdown provides transparency for executive stakeholders to understand exactly what drives the cost of running AI agents in a regulated banking environment, separating model usage costs from platform and operational costs.
 
 ## Comparison Considerations
 ### AgentCore vs Self-Hosting
