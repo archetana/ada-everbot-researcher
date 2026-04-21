@@ -198,3 +198,54 @@ This breakdown provides transparency for executive stakeholders to understand ex
 *Analysis conducted: 2026-04-19*
 *Sources: Public web search results, AWS documentation, technical blogs, and community discussions*
 *Note: For enterprise procurement, always verify with official AWS pricing documents and consult with AWS representatives for contract-specific pricing*
+
+---
+
+## Review (added 2026-04-21)
+
+The document is a solid starting point for scoping AgentCore costs in a regulated enterprise, but it reads more like a framework than a finished estimate. A decision-maker handed this today would not be able to answer "what will it cost us per month?" The gaps are fixable, and several numbers should be reworked before the analysis is shared beyond an internal working group.
+
+### Accuracy and math
+
+The token-cost arithmetic on the model-usage section is internally consistent but misrepresents how Bedrock/Anthropic prompt caching is actually billed, which is the largest line item in the breakdown:
+
+- **Cache writes are priced differently from input tokens.** The document applies the $0.003/1K input-token rate to 135M "cache write" tokens to get $405. On Anthropic's published pricing for Claude 3.5 Sonnet, cache writes are ~$0.00375/1K (a 25% premium over input), and on Bedrock prompt caching the write premium is similar. Using the correct rate, the same 135M tokens is closer to $506, not $405.
+- **Cache reads are missing entirely.** With a 90% hit rate, the bulk of input — 135M tokens/month — are cache reads, which are the cheap side of the ledger (~$0.0003/1K, roughly 10% of input). That's ~$40/month and deserves its own line; omitting it makes the cached architecture look more expensive than it is relative to the uncached baseline.
+- **Cache writes should not scale with every invocation.** The assumption that 90% of every session's 6,000 input tokens is written to cache each time contradicts how prompt caching works — you write once, then read on subsequent hits within the TTL (5 min default). Unless the system prompt truly evicts and rewrites every request, cache-write volume should be a function of cache TTL and session concurrency, not session count × hit rate. This likely overstates cache-write cost by 1–2 orders of magnitude.
+
+Net: the $750 model-usage subtotal is probably high by a factor of ~3–5x because of how cache writes are modeled. Reworking this is the highest-value edit.
+
+### Completeness
+
+Several components are listed as placeholders that make the "Total Estimated Monthly Cost" unusable as-is:
+
+- vCPU, memory (GB-hour), and gateway operation fees are labeled "Based on AWS Calculator estimation" with no actual numbers. Since the linked calculator estimate is the source of truth, pulling those values in is table-stakes.
+- AgentCore Memory Storage, Data Transfer, and Guardrails are all marked "[ESTIMATED]" / "[BASED ON ...]" with no estimate. Even rough ranges (e.g., "Guardrails: ~$0.15/1K text units, ~$X/month at this volume") would give the reader something to compare.
+- Cost-per-transaction formulas are written but not evaluated. For an executive audience, the punch line — dollars per invocation, dollars per QC item — is the number they'll remember. Leaving it as a formula undercuts the document's purpose.
+
+### Assumptions worth challenging
+
+- **95% I/O wait time** is called out as a justification but doesn't show up in the math. On AgentCore, vCPU is billed per second of active use, so high I/O wait should *reduce* compute cost — but only if the runtime actually releases the vCPU during waits, which depends on implementation. Worth stating explicitly whether the 95% figure is being modeled as cost-saving, cost-neutral, or cost-additive.
+- **90% cache hit rate** is optimistic for agentic workloads with variable tool-call paths. Typical production numbers I've seen cited are 50–70%. Including a sensitivity table (hit rate 50% / 70% / 90%) would make the estimate more defensible.
+- **Claude 3.5 Sonnet** is the modeled choice, but as of April 2026 newer Claude models (Sonnet 4.6, Haiku 4.5) are available on Bedrock with different price/performance profiles. For a banking use case, it's worth either justifying sticking with 3.5 Sonnet or modeling Haiku 4.5 as a lower-cost tier for simpler agents in the pipeline.
+
+### Minor issues
+
+- Line 47: typo — "Input Tokts" should be "Input Tokens."
+- The "Cost Per Transaction Calculations" section multiplies 5 agents × 5 processes to reach 1,000 QC items, but the setup said 1,000 invocations per agent and 25 agents total. The per-1,000-items math doesn't cleanly derive from the stated parameters — reconcile or restate.
+- References list URLs as bare text rather than markdown links, which is fine, but several are third-party blogs (Medium, DEV, scalevise) cited alongside AWS primary docs. Marking which are authoritative vs. secondary would help readers assess reliability.
+- "Managed session storage is in public preview" is noted but not dated. In a fast-moving pricing area, noting "as of [date] per [URL]" prevents stale claims from outliving their shelf life.
+
+### What to add
+
+- A concrete total-monthly-cost number (even a range) by pulling the calculator values in.
+- A sensitivity table across 2–3 cache hit rates and 2–3 model choices.
+- A separate "what would self-hosting cost at this scale" comparison, since the doc frames AgentCore vs. self-hosting qualitatively but doesn't quantify the break-even point — that's the single question most enterprise buyers will ask.
+- A 12-month projection showing how the cost scales if agents or invocations grow 2x/4x — useful for budgeting conversations.
+
+### Overall
+
+The framing, use-case justification (Tier 1 bank, regulatory load, legacy middleware latency), and cost-component taxonomy are strong and would be hard to reproduce from scratch. The work that remains is largely quantitative: correct the caching math, fill in calculator values, and produce the summary numbers the current draft gestures at. With those changes, this becomes a credible input to a procurement conversation rather than a scaffold.
+
+*Reviewer: Claude (automated review)*  
+*Review date: 2026-04-21*
