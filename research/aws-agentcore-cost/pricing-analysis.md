@@ -1,200 +1,211 @@
 # Cost of Running an Agent: Enterprise Analysis for AWS Bedrock AgentCore
 
-## Overview
-This document provides a comprehensive analysis of the total cost of running AI agents using AWS Bedrock AgentCore for enterprise deployment. It includes all cost components required for running agents in production, explained in executive-friendly terms for stakeholder communication.
-
-## Specific Use Case: Tier 1 US-Based Retail Bank - Fraud Prevention/Credit Services
-Based on AWS Calculator estimation (https://calculator.aws/#/estimate?id=19c2da06e479d0010c03861ae06628c18f94d044), we have modeled a Tier 1 US-based Retail Bank in a full production environment, specifically high-stakes departments like Fraud Prevention or Credit Services.
-
-**Justification for Selected Values:**
-- **25 Agents for 10 Use Cases**: The bank requires 25 specialized agents across 10 business use cases (example: 5 QC processes × 5 agents per process = 25 agents)
-- **1,000 Invocations per Agent**: Each agent is invoked 1,000 times monthly to process workloads (e.g., 1,000 QC items per agent)
-- **Total Monthly Sessions**: 25 agents × 1,000 invocations = 25,000 sessions (conservative estimate; actual may vary)
-- **Claude 3.5 Sonnet Selection**: Banking agents require advanced reasoning capabilities (score: 90+ on MMLU) for complex financial decisions and regulatory compliance
-- **High Token Counts (6,000 input/800 output)**: Necessary to handle massive system prompts for complex regulatory guardrails (Basel III, CCAR, GDPR) and detailed tool schemas (API definitions) for core banking systems
-- **95% I/O Wait Time**: Reflects the reality of legacy banking middleware latency in enterprise environments where agents wait for core banking system responses
-- **90% Prompt Caching Hit Rate**: Accounts for the repetitive nature of massive, static compliance headers and regulatory checks that remain constant across invocations
-
-This configuration ensures the agents are sophisticated enough to avoid "hallucinating" financial data while remaining cost-optimized for a multi-million-user customer base.
-
-## Pricing Model Summary
-
-### Core Pricing Principles
-- **Consumption-based pricing**: Pay only for active resource consumption
-- **No upfront commitments or minimum fees**
-- **Per-second billing** for compute resources
-- **No charges for pre-allocated resources**
-
-### Detailed Cost Components
-
-#### 1. AgentCore Runtime Costs
-- **vCPU**: Charged per-second usage - represents the computing power allocated to your agent
-- **Memory (GB)**: Charged per GB-hour - represents the RAM allocated to your agent
-- **Gateway Operation Fees**: Additional charges for each agent invocation/request processed
-
-#### 2. AgentCore Browser (if used)
-- Cloud-based browser runtime for website interaction
-- Pay only for active resource consumption (unlike traditional compute services)
-- No charges for pre-allocated resources
-
-#### 3. AgentCore Memory Storage
-- **Managed session storage**: Currently in public preview (S3-backed)
-- Stores agent conversation history, state, and temporary data
-- Pricing subject to change before General Availability (GA)
-- Note: Check latest documentation for updated pricing
-
-#### 4. Model Usage Costs (CRITICAL COMPONENT)
-- **Input Tokts**: Charged per 1,000 tokens - cost for processing user queries and system prompts
-- **Output Tokens**: Charged per 1,000 tokens - cost for generating agent responses
-- **Cache Reads**: Charged per 1,000 tokens - cost for reusing cached prompt sections
-- **Cache Writes**: Charged per 1,000 tokens - cost for storing prompt sections in cache
-- **For Claude 3.5 Sonnet**: $0.003 per 1,000 input tokens, $0.015 per 1,000 output tokens
-
-#### 5. Additional Potential Costs
-- **Knowledge Retrieval**: Amazon Bedrock RAG retrieval costs apply if using knowledge base integration
-- **Tool-Related Charges**: Separate charges for tools used by agents (AWS Lambda, third-party APIs, etc.)
-- **Data Transfer**: Standard EC2 network data transfer rates apply
-- **Guardrails**: Content filters metered daily, billed monthly (from Feb 1, 2025)
-- **Agent Runtime**: Base compute costs for agent orchestration and management
-
-## Detailed Cost Calculation for Tier 1 US-Based Retail Bank
-
-Based on the AWS Calculator estimation and the specified parameters, here is the detailed monthly cost breakdown:
-
-### Usage Parameters
-- **Number of Agents**: 25 (5 QC processes × 5 agents per process)
-- **Invocations per Agent**: 1,000 times monthly
-- **Total Monthly Sessions**: 25,000 (25 agents × 1,000 invocations)
-- **Model**: Claude 3.5 Sonnet
-- **Input Tokens per Session**: 6,000
-- **Output Tokens per Session**: 800
-- **Prompt Cache Hit Rate**: 90%
-- **I/O Wait Time**: 95%
-
-### Monthly Cost Breakdown
-
-#### 1. Model Usage Costs (Claude 3.5 Sonnet)
-- **Input Tokens**: 25,000 sessions × 6,000 tokens = 150,000,000 tokens
-  - At 90% cache hit rate: 15,000,000 tokens billed (10% uncached)
-  - Cost: (15,000,000 ÷ 1,000) × $0.003 = $45.00
-- **Output Tokens**: 25,000 sessions × 800 tokens = 20,000,000 tokens
-  - Cost: (20,000,000 ÷ 1,000) × $0.015 = $300.00
-- **Cache Writes**: 150,000,000 tokens × 90% = 135,000,000 tokens
-  - Cost: (135,000,000 ÷ 1,000) × $0.003 = $405.00
-
-#### 2. AgentCore Runtime Costs
-- **vCPU**: Based on AWS Calculator estimation for specified configuration
-- **Memory (GB)**: Based on AWS Calculator estimation for specified configuration
-- **Gateway Operation Fees**: 25,000 invocations × fee per invocation
-
-#### 3. Additional Cost Components
-- **AgentCore Memory Storage**: Session storage for 25,000 monthly interactions
-- **Data Transfer**: Standard EC2 rates for agent-core banking system communication
-- **Guardrails**: Content filtering for financial compliance checks
-
-### Total Estimated Monthly Cost
-Based on the AWS Calculator reference (https://calculator.aws/#/estimate?id=19c2da06e479d0010c03861ae06628c18f94d044), the total estimated monthly cost for running 25 agents with the specified usage pattern can be calculated by summing the components above.
-
-### Component Cost Summary
-
-#### Model Usage Costs (from calculations above):
-- Input Tokens: $45.00
-- Output Tokens: $300.00
-- Cache Writes: $405.00
-- **Subtotal Model Usage**: $750.00
-
-#### AgentCore Runtime Costs:
-- vCPU, Memory, and Gateway Operation Fees: [VALUE FROM CALCULATOR - MODEL USAGE]
-
-#### Additional Costs:
-- AgentCore Memory Storage: [ESTIMATED BASED ON USAGE]
-- Data Transfer: [BASED ON NETWORK USAGE]
-- Guardrails: [BASED ON CONTENT FILTERING USAGE]
-
-### Cost Per Transaction Calculations
-- **Cost per Agent Invocation**: Total monthly cost ÷ 25,000 sessions
-- **Cost per QC Process**: Cost per agent × 5 agents
-- **Cost per 1,000 QC Items**: Cost per QC process × 5 processes
-
-This breakdown provides transparency for executive stakeholders to understand exactly what drives the cost of running AI agents in a regulated banking environment, separating model usage costs from platform and operational costs.
-
-## Comparison Considerations
-### AgentCore vs Self-Hosting
-- **AgentCore Advantages**:
-  - No infrastructure management overhead
-  - Automatic scaling
-  - Built-in monitoring and multi-agent communication
-  - Compliance and governance features
-  - Pay-as-you-go model
-
-- **Self-Hosting Considerations**:
-  - Potential cost savings at scale
-  - Full control over environment
-  - Requires DevOps expertise for management
-  - Need to handle scaling, monitoring, and updates manually
-
-## Enterprise Deployment Factors
-
-### Cost Optimization Strategies
-1. **Right-sizing**: Monitor actual vCPU and GB-hour usage to optimize allocations
-2. **Tool Selection**: Choose cost-effective tools for agent operations
-3. **Knowledge Base Usage**: Optimize RAG queries to minimize retrieval costs
-4. **Model Selection**: Choose appropriate model sizes for tasks
-5. **Caching Strategies**: Implement caching for repeated operations
-6. **Batch Processing**: Where applicable, batch operations to reduce gateway fees
-
-### Hidden Costs to Watch For
-1. **Data Transfer Charges**: Especially for agents accessing external APIs or large datasets
-2. **Tool Execution Costs**: Lambda functions or third-party API calls can accumulate
-3. **Memory Storage Growth**: Session storage costs can increase with usage
-4. **Model Inference Costs**: If using custom models, separate inference charges apply
-5. **Development and Testing**: Iterative development can increase costs during prototyping
-
-## Recommendations for Enterprise Evaluation
-
-### 1. Proof of Concept Approach
-- Start with minimal viable agent to understand baseline costs
-- Use AWS pricing calculator for initial estimates
-- Monitor actual usage patterns for 4-6 weeks
-- Scale gradually while tracking cost per transaction
-
-### 2. Cost Monitoring Implementation
-- Set up AWS Cost Explorer budgets and alerts
-- Implement custom metrics for cost-per-agent-operation
-- Tag resources appropriately for detailed cost allocation
-- Regular review of usage patterns and optimization opportunities
-
-### 3. Security and Compliance Considerations
-- Factor in costs for:
-  - VPC endpoints (if needed for private connectivity)
-  - Encryption and key management (KMS)
-  - Audit logging (CloudTrail, Config)
-  - IAM roles and policies management
-
-## Limitations of Current Information
-- Pricing details may have changed since sources were published
-- Managed session storage pricing is still in preview and subject to change
-- Enterprise volume discounts not visible in public pricing
-- Regional pricing variations may apply
-
-## Next Steps for Detailed Analysis
-1. **Official AWS Pricing Calculator**: Use AWS official tools for account-specific estimates
-2. **Pilot Program**: Run a limited enterprise pilot with detailed cost tracking
-3. **Usage Modeling**: Develop models based on expected agent interaction patterns
-4. **Comparative Analysis**: Compare against alternative platforms (Azure AI Services, Google Vertex AI Agent Builder, etc.)
-5. **ROI Modeling**: Factor in development speed, operational overhead reduction, and time-to-market benefits
-
-## References
-1. Amazon Bedrock AgentCore Pricing - AWS (aws.amazon.com/bedrock/agentcore/pricing/)
-2. Amazon Bedrock AgentCore - AWS (aws.amazon.com/bedrock/agentcore/)
-3. Overview - Amazon Bedrock AgentCore (docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html)
-4. AgentCore (Bedrock) Pricing and When Self-Hosting Wins (scalevise.com/resources/agentcore-bedrock-pricing-self-hosting/)
-5. AWS Bedrock Pricing: Hidden Costs, Real Savings - Medium (cloudshim.medium.com/aws-bedrock-pricing-hidden-costs-real-savings-4dd350aee41e)
-6. Predicting Your AI Agent's Cost - DEV Community (dev.to/aws/predicting-your-ai-agents-cost-6m9)
-7. Amazon Bedrock AgentCore: Pricing, Features & How It Works (www.pump.co/blog/amazon-bedrock-agentcore)
-8. Inquiry about Model Usage Costs for AgentCore Memory | AWS re:Post (repost.aws/questions/QUc6dELuZwRhidwCRV4kFSgA/inquiry-about-model-usage-costs-for-agentcore-memory)
+> **Revised:** April 21, 2026 — Corrected session counts, model updated to Claude Sonnet 4.5, batch inference added, Azure comparison included, cache pricing fixed.
+>
+> **AWS Calculator:** https://calculator.aws/#/estimate?id=76f47c5a48ccb59c85d891eede6041259a054f2d
+> **Azure Calculator:** https://azure.com/e/a09c9e21bbbb48838134b741362ed0da
 
 ---
-*Analysis conducted: 2026-04-19*
-*Sources: Public web search results, AWS documentation, technical blogs, and community discussions*
-*Note: For enterprise procurement, always verify with official AWS pricing documents and consult with AWS representatives for contract-specific pricing*
+
+## Overview
+
+This document provides a comprehensive analysis of the total cost of running AI agents using AWS Bedrock AgentCore for enterprise deployment. It includes all cost components required for production, with corrections applied from the initial estimate and an Azure OpenAI comparison for model inference costs.
+
+**Reference use case:** Tier 1 US-Based Retail Bank — Fraud Prevention and Credit Services.
+
+---
+
+## Use Case and Justification for Selected Values
+
+- **25 Agents across 10 business use cases:** 5 QC processes × 5 agents per process = 25 agents (e.g., fraud screening, credit assessment, onboarding, report generation, compliance monitoring).
+- **1,000 invocations per agent per month:** Each agent processes 1,000 work items monthly.
+- **Total monthly sessions: 25,000** (25 agents × 1,000 invocations).
+- **Model — Claude Sonnet 4.5:** Current-generation mid-tier model. Sufficient reasoning capability for financial QC (complex regulatory logic, tool orchestration) without the cost premium of frontier models.
+- **6,000 input / 800 output tokens per session:** Input accommodates large system prompts (Basel III, CCAR, GDPR guardrails) plus tool schemas for core banking APIs. Output reflects concise structured responses.
+- **95% I/O wait time:** Reflects legacy banking middleware latency. On AgentCore, CPU is only billed during active processing — I/O wait is free. This substantially reduces compute cost vs. traditional VM-based deployments.
+- **Geo Cross-Region Inference:** Routes requests to the nearest available region for resilience. No cost premium at this throughput.
+
+---
+
+## Corrected Monthly Cost Breakdown (AWS)
+
+Derived from AWS Pricing Calculator export dated April 21, 2026.
+
+| Service | Configuration | Monthly | Annual |
+|---------|--------------|---------|--------|
+| AgentCore Runtime | 25,000 sessions · 300s avg · 95% I/O wait · 2 vCPU · 1 GB | $38.33 | $459.99 |
+| AgentCore Gateway | 10,000 sessions* · 10 tools · 5 invocations/session | $0.75 | $9.02 |
+| AgentCore Memory | 10,000 sessions* · 5 turns/session · 100s duration | $19.29 | $231.50 |
+| AgentCore Observability | 1.5 GB logs/month · 5 GB spans/month (CloudWatch) | $2.50 | $30.00 |
+| Claude Sonnet 4.5 — Standard | 3 req/min · 24h/day · 6,000 input + 800 output tokens | $2,198.30 | $26,379.55 |
+| Claude Sonnet 4.5 — Batch | 50,000 records/month · 6,000 input + 800 output tokens | $825.00 | $9,900.00 |
+| **TOTAL** | | **$3,084.17** | **$37,010.04** |
+
+*AgentCore Gateway and Memory are currently configured at 10,000 sessions in the calculator. These should be updated to 25,000 to match Runtime on the next revision.*
+
+### Key Corrections from the Original Estimate
+
+The original PDF estimate (April 21, 2026) showed a monthly total of $1,573,161 due to a misconfigured Bedrock line item: 2,315 requests/minute had been entered instead of the correct 2.9 req/min (125,000 requests/month ÷ 43,200 minutes). This single error inflated the Bedrock inference cost from ~$2,200 to ~$1,542,000. The corrected figure is $3,084.17/month.
+
+---
+
+## Batch Inference
+
+Batch jobs run asynchronously and are 50% cheaper than on-demand, making them ideal for non-time-sensitive workflows.
+
+**Inputs used:**
+- Total records: 50,000/month (approximately 2× real-time sessions — covers nightly fraud sweeps, credit review queues, end-of-day report generation across 25 agents)
+- Input tokens per record: 6,000
+- Output tokens per record: 800
+
+**Monthly cost: $825.00**
+
+This is a conservative proxy. Refine after a proof-of-concept with actual batch job volumes.
+
+**Appropriate batch workloads for banking:**
+- Nightly fraud analysis runs — reviewing all accounts with activity that day
+- Scheduled report generation — end-of-day summaries across all 25 agents
+- Bulk document processing — onboarding documents, credit applications, policy PDFs ingested into knowledge bases
+
+---
+
+## AgentCore Services Reference
+
+### Runtime
+Serverless compute purpose-built for AI agents. Billing is per-second based on actual CPU consumption and peak memory. I/O wait during LLM calls, API calls, or database queries incurs no CPU charge — only memory billing continues. Includes a 1-second minimum and 128 MB minimum memory billing.
+
+### Gateway
+Enables agents to securely discover and invoke tools. Transforms APIs, Lambda functions, and existing services into agent-compatible tools. Connects to MCP servers. Priced per MCP operation (ListTools, CallTool, Ping), search query, and tool indexed.
+
+### Memory
+Manages short-term (in-session) and long-term (cross-session) memory. Short-term priced per create-event request; long-term priced per stored memory record per day and per retrieval call.
+
+### Identity
+Manages OAuth tokens and API keys for agent authentication. **Available at no additional charge** when used through AgentCore Runtime or AgentCore Gateway.
+
+### Policy
+Checks every tool call against authorization rules. Natural language policy authoring converts descriptions to Cedar policies (charged per 1,000 input tokens). **Not yet integrated into the standard AWS Pricing Calculator — price manually.**
+
+### Observability
+Full telemetry ingested into Amazon CloudWatch — traces, logs, and spans. Priced via CloudWatch ingestion and storage rates.
+
+### Evaluations
+Built-in evaluators for agent quality monitoring. Priced per input/output tokens processed. Custom evaluations incur additional model usage charges. **Not yet in AWS Pricing Calculator.**
+
+### AWS Agent Registry (Preview)
+Centralized catalog for MCP servers, agents, and skills. Includes a free tier: 5,000 records, 1M Search API calls, and 2M Get/List calls per month. Charges apply above these thresholds.
+
+---
+
+## Prompt Caching (Not Yet Applied to Calculator)
+
+Prompt caching reduces inference cost for workloads with repeated system prompts (e.g., static regulatory headers). It is not currently modeled in the calculator but should be added as a separate line item.
+
+**Correct Claude Sonnet 4.5 cache pricing:**
+- Cache writes: **$0.00375 per 1,000 tokens** (25% premium over standard input — not $0.003 as previously stated)
+- Cache reads: **$0.0003 per 1,000 tokens** (90% cheaper than standard input)
+
+At a 90% cache hit rate with 6,000 input tokens per session across 25,000 sessions, adding caching could reduce total inference cost by 40–60%. A realistic production cache hit rate for banking agents is 50–70%; the 90% figure is optimistic.
+
+---
+
+## Azure OpenAI Comparison (GPT-4o-1120, East US)
+
+For equivalent token volumes (Standard: 750K input + 100K output ×1K tokens; Batch: 300K input + 40K output ×1K tokens).
+
+| Option | Monthly | Notes |
+|--------|---------|-------|
+| Standard (On-Demand) | $2,874.97 | Pay per token · Global · Real-time |
+| Batch (On-Demand) | $575.00 | 50% off standard · Async |
+| **Standard + Batch combined** | **$3,449.97** | Comparable to AWS total |
+| Provisioned (PTU) — 50 units | $36,500.00 | Fixed cost regardless of usage |
+
+**PTU assessment:** At current session volume, 50 PTUs (minimum for Global deployment) deliver approximately 5% utilization. The break-even point against on-demand pricing is approximately 250,000 sessions/month — roughly 10× current volume. PTU is not recommended at this stage.
+
+**Model note:** GPT 4.1 is a closer capability peer to Claude Sonnet 4.5 than GPT-4o-1120. Update the Azure model selection on the next calculator revision.
+
+**PTU note:** PTU is not available for Claude Sonnet 3.7 on Azure.
+
+---
+
+## Services Not Yet Included in Estimate
+
+### Priority 1 — Add Next (High Cost or Compliance-Critical)
+
+| Service | Est. Monthly | Why Needed |
+|---------|-------------|------------|
+| Amazon Bedrock Guardrails | $500–$2,000 | PII detection, content filtering, topic guardrails. Non-negotiable for banking. Not yet in AWS Pricing Calculator. |
+| Amazon OpenSearch Serverless | $700–$2,000 | Vector store for RAG / Knowledge Bases. Required if agents query fraud rules, credit policies, or documents. |
+| VPC Endpoints (PrivateLink) | $50–$200 | Keeps Bedrock and AgentCore traffic off the public internet. Mandatory for Tier 1 bank security policy. |
+| AWS CloudTrail (Data Events) | $50–$300 | Full API audit trail. Required for banking regulatory compliance (SOC2, PCI-DSS). |
+| AWS KMS | $10–$50 | Encryption key management for data at rest. Banking compliance requirement. |
+
+### Priority 2 — Add to Next Revision (Operationally Necessary)
+
+| Service | Est. Monthly | Why Needed |
+|---------|-------------|------------|
+| Amazon API Gateway | $50–$500 | Exposes agents as APIs to internal banking apps and portals. |
+| AWS Lambda | $20–$200 | Executes tool functions invoked by agents (~125K+ calls/month at this session volume). |
+| Amazon DynamoDB | $20–$100 | Session state, conversation history, and persistent agent context. |
+| Amazon S3 | $10–$50 | Knowledge base documents, batch artifacts, direct-code deployment storage. |
+
+**Estimated total with Priority 1 services added: $5,000–$15,000 additional per month.** Total inclusive estimate: **$8,000–$18,000/month**, subject to actual Guardrails and OpenSearch usage.
+
+---
+
+## Cost Per Transaction
+
+Based on the current AWS estimate of $3,084.17/month across 25,000 sessions:
+
+- **Cost per session:** $0.123
+- **Cost per agent per month:** $3,084.17 ÷ 25 = **$123.37**
+- **Cost per 1,000 sessions:** **$123.37**
+
+These figures will increase once Priority 1 services are added.
+
+---
+
+## Cost Optimization Strategies
+
+1. **Batch routing:** Send all non-time-sensitive workloads through batch inference (50% savings). Target: fraud sweeps, credit reviews, report generation.
+2. **Prompt caching:** Implement caching for static system prompt sections (regulatory context, tool schemas). Projected 40–60% inference cost reduction.
+3. **Right-size Gateway and Memory:** Update session counts to 25,000 to align with Runtime; recalculate on next revision.
+4. **Cache hit rate sensitivity:** Model at 50%, 70%, and 90% hit rates to bound the range before committing to caching infrastructure.
+5. **Knowledge base query optimization:** Minimize RAG retrievals per session; retrieve once and pass context to reduce OpenSearch costs.
+6. **Grow into PTU:** Revisit Azure PTU if sessions scale to 250K+/month.
+
+---
+
+## What Still Needs Pricing
+
+The following AgentCore components are not yet available in the standard AWS Pricing Calculator and must be estimated manually from the pricing page at [aws.amazon.com/bedrock/agentcore/pricing](https://aws.amazon.com/bedrock/agentcore/pricing/):
+
+- **AgentCore Policy** — authorization checks per tool call
+- **AgentCore Evaluations** — built-in evaluators (tokens billed by AgentCore)
+- **Amazon Bedrock Guardrails** — per text unit processed
+- **Amazon Bedrock Knowledge Bases** — per retrieval request
+
+---
+
+## Recommendations
+
+1. **Use AWS on-demand at current volume.** At $3,084/month, it is competitive with Azure on-demand ($3,450) and far more cost-effective than Azure PTU ($37,075).
+2. **Route batch workloads explicitly.** Separate real-time (3 req/min, 24h) from non-urgent (50K records/month batch) to capture the 50% batch discount.
+3. **Add Guardrails and OpenSearch before sharing with procurement.** These are likely the second and third largest line items once added.
+4. **Run a PoC to validate assumptions.** Specifically: actual I/O wait percentage, realistic cache hit rate, and batch job volumes.
+5. **Set up cost alerting on Day 1.** AWS Cost Explorer budgets with alerts at 80% and 100% of monthly estimate. Tag all AgentCore resources for per-agent cost allocation.
+
+---
+
+## References
+
+1. [Amazon Bedrock AgentCore Pricing](https://aws.amazon.com/bedrock/agentcore/pricing/) — AWS
+2. [Amazon Bedrock AgentCore Overview](https://aws.amazon.com/bedrock/agentcore/) — AWS
+3. [AgentCore Developer Guide](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html) — AWS
+4. [AWS Bedrock Pricing: Hidden Costs, Real Savings](https://aws.cloudshim.com/aws-top-services/amazon-bedrock) — CloudShim
+5. [Predicting Your AI Agent's Cost](https://dev.to/aws/predicting-your-ai-agents-cost-6m9) — AWS Dev Community
+
+---
+
+*Analysis revised: April 21, 2026*
+*Estimates based on public AWS and Azure pricing calculators. Actual costs depend on real usage. Verify with AWS and Azure representatives for enterprise contract pricing.*
