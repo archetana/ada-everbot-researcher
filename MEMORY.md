@@ -22,3 +22,15 @@ Additional work completed:
 - Analyzed consumption-based pricing model (per-second vCPU & GB-hours + Gateway op fees)
 - Identified additional cost factors: model usage, knowledge retrieval, tool charges, data transfer, guardrails
 - Created detailed pricing analysis document with cost optimization strategies and enterprise considerations
+
+Work completed 2026-04-21:
+- Researched patentable ideas in LoRA/PEFT research
+- Identified 7 distinct patentable concepts:
+  1. Hardware-Aware Dynamic Rank Allocation System
+  2. Long-Context LoRA with Positional Intelligence
+  3. PEFT-RLHF Co-Optimization Framework
+  4. Cross-Architecture LoRA Transferability Predictor
+  5. Unified Sparse-Low Rank Adaptation (USLoRA)
+  6. Quantization-Aware LoRA with Error Compensation
+  7. Federated LoRA with Secure Aggregation
+- Created detailed document outlining each concept with technical components and patentable aspects
