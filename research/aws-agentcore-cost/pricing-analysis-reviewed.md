@@ -1,4 +1,7 @@
 # Cost of Running an Agent: Enterprise Analysis for AWS Bedrock AgentCore
+Azure calculator link is https://azure.com/e/a09c9e21bbbb48838134b741362ed0da
+
+AWS calculator link https://calculator.aws/#/estimate?id=76f47c5a48ccb59c85d891eede6041259a054f2d
 
 ## Overview
 This document provides a comprehensive analysis of the total cost of running AI agents using AWS Bedrock AgentCore for enterprise deployment. It includes all cost components required for running agents in production, explained in executive-friendly terms for stakeholder communication.
